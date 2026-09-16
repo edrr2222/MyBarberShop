@@ -2,10 +2,14 @@
 @extends('layouts.app', ['barberia' => $barberia])
 
 @section('header-actions')
-    <form method="POST" action="{{ route('client.logout') }}">
-        @csrf
-        <button type="submit" class="btn-secundario" style="margin:0;color:#fff;border-color:#fff">Salir</button>
-    </form>
+    <nav style="display:flex;gap:18px;align-items:center">
+        <a href="{{ route('client.qr') }}" style="opacity:1;font-weight:600">Mi QR</a>
+        <a href="{{ route('client.servicios') }}" style="opacity:.85">Servicios</a>
+        <form method="POST" action="{{ route('client.logout') }}">
+            @csrf
+            <button type="submit" class="btn-secundario" style="margin:0;color:#fff;border-color:#fff">Salir</button>
+        </form>
+    </nav>
 @endsection
 
 @section('content')

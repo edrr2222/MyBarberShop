@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\ScopedAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Servicio;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ServicioController extends Controller
 {
@@ -14,6 +15,7 @@ class ServicioController extends Controller
     public function index()
     {
         $servicios = Servicio::where('barberia_id', $this->barberiaId())
+            ->orderBy('categoria')
             ->orderBy('orden')
             ->get();
 
@@ -64,6 +66,7 @@ class ServicioController extends Controller
     {
         $validated = $request->validate([
             'nombre' => 'required|string|max:150',
+            'categoria' => ['required', Rule::in(array_keys(Servicio::CATEGORIAS))],
             'descripcion' => 'nullable|string',
             'precio' => 'required|numeric|min:0',
             'duracion_minutos' => 'nullable|integer|min:0',

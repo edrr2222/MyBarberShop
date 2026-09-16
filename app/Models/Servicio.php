@@ -8,8 +8,15 @@ class Servicio extends Model
 {
     protected $table = 'barberia.servicio';
 
+    public const CATEGORIAS = [
+        'corte' => 'Cortes',
+        'barba' => 'Barba',
+        'color' => 'Color',
+        'otro' => 'Otros servicios',
+    ];
+
     protected $fillable = [
-        'barberia_id', 'nombre', 'descripcion', 'precio',
+        'barberia_id', 'nombre', 'categoria', 'descripcion', 'precio',
         'duracion_minutos', 'imagen_url', 'aplica_sello', 'estado', 'orden',
     ];
 

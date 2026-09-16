@@ -63,6 +63,7 @@ class EmpleadoController extends Controller
     {
         $this->autorizarEmpleado($empleado);
         $sedes = $this->sedesDisponibles();
+        $empleado->load('redesSociales');
 
         return view('admin.empleados.edit', compact('empleado', 'sedes'));
     }

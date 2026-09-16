@@ -9,6 +9,13 @@
         <label for="nombre">Nombre</label>
         <input type="text" id="nombre" name="nombre" value="{{ old('nombre', $servicio->nombre) }}" required autofocus>
 
+        <label for="categoria">Categoría</label>
+        <select id="categoria" name="categoria" required>
+            @foreach (\App\Models\Servicio::CATEGORIAS as $valor => $etiqueta)
+                <option value="{{ $valor }}" @selected(old('categoria', $servicio->categoria) === $valor)>{{ $etiqueta }}</option>
+            @endforeach
+        </select>
+
         <label for="descripcion">Descripción</label>
         <textarea id="descripcion" name="descripcion" rows="2">{{ old('descripcion', $servicio->descripcion) }}</textarea>
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ClienteController;
 use App\Http\Controllers\Admin\EmpleadoController;
+use App\Http\Controllers\Admin\EmpleadoRedSocialController;
 use App\Http\Controllers\Admin\MarcaController;
 use App\Http\Controllers\Admin\SedeController;
 use App\Http\Controllers\Admin\ServicioController;
@@ -27,6 +28,17 @@ Route::middleware('tenant')->prefix('b/{barberiaSlug}/{sedeSlug}')->group(functi
 // ---- App cliente (autenticado con guard 'client') ----
 Route::middleware('auth:client')->group(function () {
     Route::get('/mi-qr', fn () => view('client.qr'))->name('client.qr');
+    Route::get('/servicios', function () {
+        $client = auth('client')->user();
+        $servicios = Servicio::where('barberia_id', $client->barberia_id)
+            ->where('estado', true)
+            ->orderBy('categoria')
+            ->orderBy('orden')
+            ->get()
+            ->groupBy('categoria');
+
+        return view('client.servicios', ['servicios' => $servicios, 'barberia' => $client->barberia]);
+    })->name('client.servicios');
     Route::post('/logout', [ClientAuthController::class, 'logout'])->name('client.logout');
 });
 
@@ -48,6 +60,7 @@ Route::prefix('staff')->group(function () {
         })->name('empleado.scanner');
         Route::get('/perfil', function () {
             $empleado = auth('empleado')->user();
+            $empleado->load('redesSociales');
 
             return view('empleado.perfil', ['empleado' => $empleado, 'barberia' => $empleado->sede->barberia]);
         })->name('empleado.perfil');
@@ -80,6 +93,8 @@ Route::prefix('admin')->group(function () {
         Route::get('/empleados/{empleado}/editar', [EmpleadoController::class, 'edit'])->name('empleados.edit');
         Route::put('/empleados/{empleado}', [EmpleadoController::class, 'update'])->name('empleados.update');
         Route::post('/empleados/{empleado}/toggle', [EmpleadoController::class, 'toggle'])->name('empleados.toggle');
+        Route::post('/empleados/{empleado}/redes-sociales', [EmpleadoRedSocialController::class, 'store'])->name('empleados.redes-sociales.store');
+        Route::delete('/empleados/{empleado}/redes-sociales/{redSocial}', [EmpleadoRedSocialController::class, 'destroy'])->name('empleados.redes-sociales.destroy');
 
         Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios.index');
         Route::get('/servicios/crear', [ServicioController::class, 'create'])->name('servicios.create');
