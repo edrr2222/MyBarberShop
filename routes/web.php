@@ -5,6 +5,7 @@ use App\Http\Controllers\ClientAuthController;
 use App\Http\Controllers\EmpleadoAuthController;
 use App\Http\Controllers\QrController;
 use App\Http\Controllers\TenantController;
+use App\Models\Servicio;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -30,8 +31,17 @@ Route::prefix('staff')->group(function () {
     Route::post('/login', [EmpleadoAuthController::class, 'login']);
 
     Route::middleware('auth:empleado')->group(function () {
-        Route::get('/scanner', fn () => view('empleado.scanner'))->name('empleado.scanner');
-        Route::get('/perfil', fn () => view('empleado.perfil'))->name('empleado.perfil');
+        Route::get('/scanner', function (\Illuminate\Http\Request $request) {
+            $empleado = auth('empleado')->user();
+            $servicios = Servicio::where('barberia_id', $empleado->sede->barberia_id)
+                ->where('estado', true)
+                ->orderBy('orden')
+                ->get();
+            $servicioId = $request->query('servicio_id');
+
+            return view('empleado.scanner', compact('servicios', 'servicioId'));
+        })->name('empleado.scanner');
+        Route::get('/perfil', fn () => view('empleado.perfil', ['empleado' => auth('empleado')->user()]))->name('empleado.perfil');
         Route::post('/logout', [EmpleadoAuthController::class, 'logout'])->name('empleado.logout');
     });
 });
@@ -42,7 +52,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminAuthController::class, 'login']);
 
     Route::middleware('auth:admin')->group(function () {
-        Route::get('/dashboard', fn () => view('admin.dashboard'))->name('admin.dashboard');
+        Route::get('/dashboard', fn () => view('admin.dashboard', ['admin' => auth('admin')->user()]))->name('admin.dashboard');
         Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
     });
 });
