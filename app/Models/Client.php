@@ -21,8 +21,11 @@ class Client extends Authenticatable
 
     public function tarjetaActiva()
     {
+        // No filtrar por barberia_id aquí: en eager loading (::with()) Eloquent
+        // construye esta relación con una instancia vacía del modelo, así que
+        // $this->barberia_id sería null y rompería el where. No hace falta de
+        // todas formas: client_id ya acota la tarjeta a un único cliente/barbería.
         return $this->hasOne(LoyaltyCard::class, 'client_id')
-            ->where('barberia_id', $this->barberia_id)
             ->whereIn('estado', ['activa', 'completada'])
             ->latestOfMany();
     }

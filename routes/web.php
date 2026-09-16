@@ -1,5 +1,10 @@
 <?php
 
+use App\Http\Controllers\Admin\ClienteController;
+use App\Http\Controllers\Admin\EmpleadoController;
+use App\Http\Controllers\Admin\MarcaController;
+use App\Http\Controllers\Admin\SedeController;
+use App\Http\Controllers\Admin\ServicioController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\ClientAuthController;
 use App\Http\Controllers\EmpleadoAuthController;
@@ -39,9 +44,13 @@ Route::prefix('staff')->group(function () {
                 ->get();
             $servicioId = $request->query('servicio_id');
 
-            return view('empleado.scanner', compact('servicios', 'servicioId'));
+            return view('empleado.scanner', ['servicios' => $servicios, 'servicioId' => $servicioId, 'barberia' => $empleado->sede->barberia]);
         })->name('empleado.scanner');
-        Route::get('/perfil', fn () => view('empleado.perfil', ['empleado' => auth('empleado')->user()]))->name('empleado.perfil');
+        Route::get('/perfil', function () {
+            $empleado = auth('empleado')->user();
+
+            return view('empleado.perfil', ['empleado' => $empleado, 'barberia' => $empleado->sede->barberia]);
+        })->name('empleado.perfil');
         Route::post('/logout', [EmpleadoAuthController::class, 'logout'])->name('empleado.logout');
     });
 });
@@ -51,9 +60,36 @@ Route::prefix('admin')->group(function () {
     Route::get('/login', fn () => view('admin.login'))->name('admin.login');
     Route::post('/login', [AdminAuthController::class, 'login']);
 
-    Route::middleware('auth:admin')->group(function () {
-        Route::get('/dashboard', fn () => view('admin.dashboard', ['admin' => auth('admin')->user()]))->name('admin.dashboard');
-        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+    Route::middleware('auth:admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', fn () => view('admin.dashboard', ['admin' => auth('admin')->user()]))->name('dashboard');
+        Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
+
+        Route::get('/marca', [MarcaController::class, 'edit'])->name('marca.edit');
+        Route::put('/marca', [MarcaController::class, 'update'])->name('marca.update');
+
+        Route::get('/sedes', [SedeController::class, 'index'])->name('sedes.index');
+        Route::get('/sedes/crear', [SedeController::class, 'create'])->name('sedes.create');
+        Route::post('/sedes', [SedeController::class, 'store'])->name('sedes.store');
+        Route::get('/sedes/{sede}/editar', [SedeController::class, 'edit'])->name('sedes.edit');
+        Route::put('/sedes/{sede}', [SedeController::class, 'update'])->name('sedes.update');
+        Route::post('/sedes/{sede}/toggle', [SedeController::class, 'toggle'])->name('sedes.toggle');
+
+        Route::get('/empleados', [EmpleadoController::class, 'index'])->name('empleados.index');
+        Route::get('/empleados/crear', [EmpleadoController::class, 'create'])->name('empleados.create');
+        Route::post('/empleados', [EmpleadoController::class, 'store'])->name('empleados.store');
+        Route::get('/empleados/{empleado}/editar', [EmpleadoController::class, 'edit'])->name('empleados.edit');
+        Route::put('/empleados/{empleado}', [EmpleadoController::class, 'update'])->name('empleados.update');
+        Route::post('/empleados/{empleado}/toggle', [EmpleadoController::class, 'toggle'])->name('empleados.toggle');
+
+        Route::get('/servicios', [ServicioController::class, 'index'])->name('servicios.index');
+        Route::get('/servicios/crear', [ServicioController::class, 'create'])->name('servicios.create');
+        Route::post('/servicios', [ServicioController::class, 'store'])->name('servicios.store');
+        Route::get('/servicios/{servicio}/editar', [ServicioController::class, 'edit'])->name('servicios.edit');
+        Route::put('/servicios/{servicio}', [ServicioController::class, 'update'])->name('servicios.update');
+        Route::post('/servicios/{servicio}/toggle', [ServicioController::class, 'toggle'])->name('servicios.toggle');
+
+        Route::get('/clientes', [ClienteController::class, 'index'])->name('clientes.index');
+        Route::post('/clientes/{client}/toggle', [ClienteController::class, 'toggle'])->name('clientes.toggle');
     });
 });
 

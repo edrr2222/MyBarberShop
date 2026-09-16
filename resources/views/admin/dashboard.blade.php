@@ -1,20 +1,20 @@
-@extends('layouts.app')
-
-@section('header-actions')
-    <form method="POST" action="{{ route('admin.logout') }}">
-        @csrf
-        <button type="submit" class="btn-secundario" style="margin:0;color:#fff;border-color:#fff">Salir</button>
-    </form>
-@endsection
+@extends('layouts.admin', ['title' => 'Resumen'])
 
 @section('content')
-<div class="card">
-    <h1>Hola, {{ $admin->nombre }}</h1>
+<div class="panel">
+    <h2 style="margin-top:0">Hola, {{ $admin->nombre }}</h2>
     <p style="color:#666">
         {{ $admin->esAdminDeBarberiaCompleta() ? 'Administras toda la barbería.' : 'Administras una sede específica.' }}
     </p>
-    <p style="color:#999;font-size:.85rem">
-        El panel de gestión (sedes, empleados, servicios, colores) todavía no está implementado — ver README, sección Pendiente.
-    </p>
+    <div class="scissors-divider" style="margin:24px 0"></div>
+    <div class="grid-2" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px">
+        @if ($admin->esAdminDeBarberiaCompleta())
+            <a href="{{ route('admin.marca.edit') }}" class="btn btn-secundario" style="margin:0;text-align:center">Editar marca</a>
+        @endif
+        <a href="{{ route('admin.sedes.index') }}" class="btn btn-secundario" style="margin:0;text-align:center">Sedes</a>
+        <a href="{{ route('admin.empleados.index') }}" class="btn btn-secundario" style="margin:0;text-align:center">Empleados</a>
+        <a href="{{ route('admin.servicios.index') }}" class="btn btn-secundario" style="margin:0;text-align:center">Servicios</a>
+        <a href="{{ route('admin.clientes.index') }}" class="btn btn-secundario" style="margin:0;text-align:center">Clientes</a>
+    </div>
 </div>
 @endsection
