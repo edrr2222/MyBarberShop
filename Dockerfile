@@ -15,6 +15,7 @@ RUN install-php-extensions \
     pgsql \
     gd \
     zip \
+    bcmath \
     opcache
 
 # El binario trae cap_net_bind_service para poder usar el puerto 80/443 sin
