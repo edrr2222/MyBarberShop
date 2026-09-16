@@ -19,13 +19,6 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// ---- Entrada del cliente vía QR fijo de sede ----
-Route::middleware('tenant')->prefix('b/{barberiaSlug}/{sedeSlug}')->group(function () {
-    Route::get('/', [TenantController::class, 'show'])->name('tenant.landing');
-    Route::post('/registro', [ClientAuthController::class, 'register'])->name('client.register');
-    Route::post('/login', [ClientAuthController::class, 'login'])->name('client.login');
-});
-
 // ---- App cliente (autenticado con guard 'client') ----
 Route::middleware('auth:client')->group(function () {
     Route::get('/mi-qr', fn () => view('client.qr'))->name('client.qr');
@@ -41,32 +34,6 @@ Route::middleware('auth:client')->group(function () {
         return view('client.servicios', ['servicios' => $servicios, 'barberia' => $client->barberia]);
     })->name('client.servicios');
     Route::post('/logout', [ClientAuthController::class, 'logout'])->name('client.logout');
-});
-
-// ---- App barbero ----
-Route::prefix('staff')->group(function () {
-    Route::get('/login', fn () => view('empleado.login'))->name('empleado.login');
-    Route::post('/login', [EmpleadoAuthController::class, 'login']);
-
-    Route::middleware('auth:empleado')->group(function () {
-        Route::get('/scanner', function (\Illuminate\Http\Request $request) {
-            $empleado = auth('empleado')->user();
-            $servicios = Servicio::where('barberia_id', $empleado->sede->barberia_id)
-                ->where('estado', true)
-                ->orderBy('orden')
-                ->get();
-            $servicioId = $request->query('servicio_id');
-
-            return view('empleado.scanner', ['servicios' => $servicios, 'servicioId' => $servicioId, 'barberia' => $empleado->sede->barberia]);
-        })->name('empleado.scanner');
-        Route::get('/perfil', function () {
-            $empleado = auth('empleado')->user();
-            $empleado->load('redesSociales');
-
-            return view('empleado.perfil', ['empleado' => $empleado, 'barberia' => $empleado->sede->barberia]);
-        })->name('empleado.perfil');
-        Route::post('/logout', [EmpleadoAuthController::class, 'logout'])->name('empleado.logout');
-    });
 });
 
 // ---- Panel admin ----
@@ -116,4 +83,53 @@ Route::prefix('api/loyalty')->group(function () {
     Route::middleware('auth:client')->get('/qr-token', [QrController::class, 'generarToken']);
     Route::middleware('auth:empleado')->post('/escanear', [QrController::class, 'escanear']);
     Route::middleware('auth:empleado')->post('/redimir', [QrController::class, 'redimir']);
+});
+
+// ---- Entrada del cliente vía QR fijo de sede, y app del barbero ----
+// Todo bajo /{barberiaToken}/... (id de la barbería codificado, no su
+// nombre/slug) para que cada barbería tenga su propio espacio de URL sin
+// depender de un nombre legible — necesario porque la plataforma es
+// multi-tenant y va a alojar varias barberías distintas.
+//
+// Registrado AL FINAL del archivo a propósito: {barberiaToken}/{sedeToken}
+// es un comodín de 2 segmentos que, de ir primero, atraparía por error
+// cualquier ruta de 2 segmentos ya definida arriba (ej. GET /admin/login,
+// GET /admin/dashboard) antes de que esas rutas más específicas puedan
+// coincidir. Laravel prueba las rutas en el orden en que se registran.
+Route::prefix('{barberiaToken}')->group(function () {
+    // El grupo de "staff" también va antes que el del cliente: "staff" es
+    // un segmento literal y {sedeToken} es un comodín — si el grupo del
+    // cliente se registrara primero, "POST /{token}/staff/login" quedaría
+    // atrapado por "POST /{token}/{sedeToken}/login" (mismo shape de 3
+    // segmentos), interpretando "staff" como si fuera un sedeToken.
+    Route::prefix('staff')->middleware('resolve.barberia')->group(function () {
+        Route::get('/login', fn () => view('empleado.login'))->name('empleado.login');
+        Route::post('/login', [EmpleadoAuthController::class, 'login']);
+
+        Route::middleware('auth:empleado')->group(function () {
+            Route::get('/scanner', function (\Illuminate\Http\Request $request) {
+                $empleado = auth('empleado')->user();
+                $servicios = Servicio::where('barberia_id', $empleado->sede->barberia_id)
+                    ->where('estado', true)
+                    ->orderBy('orden')
+                    ->get();
+                $servicioId = $request->query('servicio_id');
+
+                return view('empleado.scanner', ['servicios' => $servicios, 'servicioId' => $servicioId, 'barberia' => $empleado->sede->barberia]);
+            })->name('empleado.scanner');
+            Route::get('/perfil', function () {
+                $empleado = auth('empleado')->user();
+                $empleado->load('redesSociales');
+
+                return view('empleado.perfil', ['empleado' => $empleado, 'barberia' => $empleado->sede->barberia]);
+            })->name('empleado.perfil');
+            Route::post('/logout', [EmpleadoAuthController::class, 'logout'])->name('empleado.logout');
+        });
+    });
+
+    Route::middleware('tenant')->group(function () {
+        Route::get('/{sedeToken}', [TenantController::class, 'show'])->name('tenant.landing');
+        Route::post('/{sedeToken}/registro', [ClientAuthController::class, 'register'])->name('client.register');
+        Route::post('/{sedeToken}/login', [ClientAuthController::class, 'login'])->name('client.login');
+    });
 });

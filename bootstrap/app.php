@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\TenantToken;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant' => \App\Http\Middleware\ResolveTenant::class,
+            'resolve.barberia' => \App\Http\Middleware\ResolveBarberiaToken::class,
         ]);
 
         // Render (y la mayoría de plataformas cloud) terminan el HTTPS en su
@@ -33,14 +35,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 return route('admin.login');
             }
 
-            if ($request->is('staff/*')) {
-                return route('empleado.login');
+            if ($request->is('*/staff/*')) {
+                return route('empleado.login', ['barberiaToken' => $request->segment(1)]);
             }
 
-            if (session('barberia_slug') && session('sede_slug')) {
+            if (session('barberia_id') && session('sede_id')) {
                 return route('tenant.landing', [
-                    'barberiaSlug' => session('barberia_slug'),
-                    'sedeSlug' => session('sede_slug'),
+                    'barberiaToken' => TenantToken::barberia(session('barberia_id')),
+                    'sedeToken' => TenantToken::sede(session('sede_id')),
                 ]);
             }
 

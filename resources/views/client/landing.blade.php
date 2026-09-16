@@ -18,7 +18,7 @@
         <button type="button" onclick="mostrarTab('registro')" id="tab-registro">Soy nuevo</button>
     </div>
 
-    <form method="POST" action="{{ route('client.login', ['barberiaSlug' => $barberia->slug, 'sedeSlug' => $sede->slug]) }}" id="form-login">
+    <form method="POST" action="{{ route('client.login') }}" id="form-login">
         @csrf
         <label for="login-cedula">Cédula</label>
         <input type="text" id="login-cedula" name="cedula" value="{{ old('cedula') }}" required>
@@ -29,7 +29,7 @@
         <button type="submit">Entrar</button>
     </form>
 
-    <form method="POST" action="{{ route('client.register', ['barberiaSlug' => $barberia->slug, 'sedeSlug' => $sede->slug]) }}" id="form-registro" style="display:none">
+    <form method="POST" action="{{ route('client.register') }}" id="form-registro" style="display:none">
         @csrf
         <label for="reg-nombre">Nombre completo</label>
         <input type="text" id="reg-nombre" name="nombre" value="{{ old('nombre') }}" required>

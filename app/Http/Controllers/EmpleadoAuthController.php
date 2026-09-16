@@ -18,6 +18,11 @@ class EmpleadoAuthController extends Controller
             return back()->withErrors(['usuario' => 'Usuario o contraseña incorrecta.']);
         }
 
+        $barberia = $request->attributes->get('barberia');
+        if ($empleado->sede->barberia_id !== $barberia->id) {
+            return back()->withErrors(['usuario' => 'Ese usuario no pertenece a esta barbería.']);
+        }
+
         auth('empleado')->login($empleado);
 
         return redirect()->route('empleado.scanner');

@@ -12,7 +12,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ url('/staff/login') }}">
+    <form method="POST" action="{{ route('empleado.login') }}">
         @csrf
         <label for="usuario">Usuario</label>
         <input type="text" id="usuario" name="usuario" value="{{ old('usuario') }}" required autofocus>
