@@ -40,8 +40,8 @@ CREATE OR REPLACE FUNCTION loyalty.fn_escanear(
 ) RETURNS TABLE (
     ok BOOLEAN,
     mensaje TEXT,
-    sellos_actuales INT,
-    sellos_requeridos INT,
+    sellos_actuales SMALLINT,
+    sellos_requeridos SMALLINT,
     corte_gratis BOOLEAN,
     card_id BIGINT
 ) AS $$
@@ -116,10 +116,10 @@ BEGIN
     INSERT INTO loyalty.stamp (card_id, empleado_id, sede_id, servicio_id, created_at, updated_at)
     VALUES (v_card.id, p_empleado_id, p_sede_id, p_servicio_id, now(), now());
 
-    UPDATE loyalty.card
-       SET sellos_actuales = sellos_actuales + 1,
+    UPDATE loyalty.card c
+       SET sellos_actuales = c.sellos_actuales + 1,
            updated_at = now()
-     WHERE id = v_card.id
+     WHERE c.id = v_card.id
      RETURNING * INTO v_card;
 
     -- 7. ¿Se completó la tarjeta?
