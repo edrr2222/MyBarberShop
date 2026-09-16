@@ -38,61 +38,49 @@ database/procedures/      -> loyalty_procedures.sql (fuente de los SPs)
 app/Models/                -> Eloquent models, uno por tabla
 app/Http/Middleware/       -> ResolveTenant.php (resuelve barbería+sede por slug)
 app/Http/Controllers/      -> TenantController, *AuthController (x3 guards), QrController
-routes/web-snippet.php     -> rutas a fusionar con routes/web.php
+routes/web.php             -> rutas de la app (tenant, client, staff, admin, api/loyalty)
 resources/js/components/   -> ClientQr.vue, EmpleadoScanner.vue
-config/auth-guards-snippet.php -> snippet para config/auth.php (3 guards)
+resources/views/           -> vistas Blade (client, empleado, admin — placeholders, ver Pendiente)
+config/auth.php            -> guards client/empleado/admin ya configurados
 ```
 
-## Cómo integrarlo en un proyecto Laravel
+## Cómo correrlo localmente
 
-1. Si aún no tienes el proyecto Laravel instalado:
+1. Instala dependencias PHP y JS:
    ```bash
-   composer create-project laravel/laravel .
+   composer install
+   npm install
    ```
 
-2. Copia las carpetas `database/migrations` y `database/procedures` dentro de tu proyecto (fusiona con lo que ya exista).
-
-3. Configura tu conexión Postgres en `.env`:
+2. Copia `.env.example` a `.env` y ajusta la conexión a tu Postgres local:
    ```
    DB_CONNECTION=pgsql
-   DB_HOST=...
+   DB_HOST=127.0.0.1
    DB_PORT=5432
-   DB_DATABASE=...
-   DB_USERNAME=...
+   DB_DATABASE=mybarbershop
+   DB_USERNAME=postgres
    DB_PASSWORD=...
    ```
+   Genera la app key si hace falta: `php artisan key:generate`.
 
-4. Corre las migraciones:
+3. Crea la base de datos y corre las migraciones:
    ```bash
+   createdb mybarbershop
    php artisan migrate
    ```
    Esto crea los schemas (`tenant`, `barberia`, `loyalty`), todas las tablas, y carga los 3 stored procedures.
 
-5. Copia el contenido de `config/auth-guards-snippet.php` dentro de tu `config/auth.php` real (arrays `guards` y `providers`).
+4. Levanta el servidor:
+   ```bash
+   php artisan serve
+   ```
+   La app queda en `http://127.0.0.1:8000`. Rutas para probar: `/`, `/staff/login`, `/admin/login`, y `/b/{barberiaSlug}/{sedeSlug}` (requiere una fila en `tenant.barberia`/`tenant.sede` con `estado = true`).
 
-6. Copia `app/Models`, `app/Http/Controllers` y `app/Http/Middleware` a tu proyecto.
-
-7. Registra el middleware `tenant`:
-   - **Laravel 11+** (`bootstrap/app.php`):
-     ```php
-     ->withMiddleware(function (Middleware $middleware) {
-         $middleware->alias(['tenant' => \App\Http\Middleware\ResolveTenant::class]);
-     })
-     ```
-   - **Laravel 10 o anterior** (`app/Http/Kernel.php`, array `$middlewareAliases`):
-     ```php
-     'tenant' => \App\Http\Middleware\ResolveTenant::class,
-     ```
-
-8. Fusiona `routes/web-snippet.php` dentro de tu `routes/web.php`.
-
-9. Crea las vistas Blade referenciadas en las rutas (`client.landing`, `client.qr`, `empleado.login`, `empleado.scanner`, `empleado.perfil`, `admin.login`, `admin.dashboard`) — pueden empezar como placeholders simples.
-
-10. Instala las dependencias JS de los componentes Vue:
-    ```bash
-    npm install qrcode html5-qrcode
-    ```
-    `ClientQr.vue` pinta el QR dinámico (se regenera antes de expirar). `EmpleadoScanner.vue` abre la cámara, escanea, llama a `/api/loyalty/escanear` y muestra el mensaje de "¡CORTE GRATIS!" cuando corresponde.
+5. (Opcional) Instala las dependencias JS de los componentes Vue de QR:
+   ```bash
+   npm install qrcode html5-qrcode
+   ```
+   `ClientQr.vue` pinta el QR dinámico (se regenera antes de expirar). `EmpleadoScanner.vue` abre la cámara, escanea, llama a `/api/loyalty/escanear` y muestra el mensaje de "¡CORTE GRATIS!" cuando corresponde. Aún no están montados en ninguna vista (ver Pendiente).
 
 ## Flujo de sellado (resumen)
 
@@ -109,7 +97,7 @@ config/auth-guards-snippet.php -> snippet para config/auth.php (3 guards)
 
 ## Pendiente
 
-- Vistas Blade (landing, logins, dashboards).
+- Las vistas Blade (landing, logins, scanner, dashboards) son placeholders mínimos — falta el diseño real y montar los componentes Vue (`ClientQr.vue`, `EmpleadoScanner.vue`).
 - Panel admin: CRUD de sede, empleados, servicios; configuración de logo/colores; generación descargable del QR fijo de sede.
 - Theming dinámico (variables CSS `--color-primario`/`--color-secundario` desde los datos de la barbería).
 - Corrección/anulación de un sello aplicado por error (fuera de alcance del MVP).
