@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\BarberiaRedSocialController;
 use App\Http\Controllers\Admin\ClienteController;
 use App\Http\Controllers\Admin\EmpleadoController;
 use App\Http\Controllers\Admin\EmpleadoRedSocialController;
@@ -79,6 +80,8 @@ Route::prefix('admin')->group(function () {
 
         Route::get('/marca', [MarcaController::class, 'edit'])->name('marca.edit');
         Route::put('/marca', [MarcaController::class, 'update'])->name('marca.update');
+        Route::post('/marca/redes-sociales', [BarberiaRedSocialController::class, 'store'])->name('marca.redes-sociales.store');
+        Route::delete('/marca/redes-sociales/{redSocial}', [BarberiaRedSocialController::class, 'destroy'])->name('marca.redes-sociales.destroy');
 
         Route::get('/sedes', [SedeController::class, 'index'])->name('sedes.index');
         Route::get('/sedes/crear', [SedeController::class, 'create'])->name('sedes.create');

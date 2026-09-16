@@ -1,4 +1,4 @@
-{{-- Espera $plataforma (instagram|facebook|tiktok|whatsapp|otro) --}}
+{{-- Espera $plataforma (instagram|facebook|tiktok|whatsapp|web|otro) --}}
 @switch($plataforma)
     @case('instagram')
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -21,6 +21,13 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3Z" stroke="currentColor" stroke-width="1.5"/>
             <path d="M8.5 8.3c.2-.5.5-.5.8-.5h.6c.2 0 .4 0 .6.4l.7 1.6c.1.2 0 .4-.1.6l-.5.6c-.1.2-.2.3-.1.5.4.8 1.5 2 2.3 2.3.2.1.4 0 .5-.1l.6-.6c.2-.2.4-.2.6-.1l1.5.8c.3.15.4.3.4.5v.6c0 .3 0 .6-.5.9-.6.35-1.5.5-2.4.2-2.1-.65-4.3-2.8-5-4.9-.3-.9-.2-1.8.1-2.4Z" fill="currentColor"/>
+        </svg>
+        @break
+    @case('web')
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
+            <ellipse cx="12" cy="12" rx="4" ry="9" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M3 12h18" stroke="currentColor" stroke-width="1.6"/>
         </svg>
         @break
     @default

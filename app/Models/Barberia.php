@@ -29,4 +29,9 @@ class Barberia extends Model
     {
         return $this->hasOne(LoyaltyConfig::class, 'barberia_id');
     }
+
+    public function redesSociales()
+    {
+        return $this->hasMany(BarberiaRedSocial::class, 'barberia_id')->orderBy('orden');
+    }
 }

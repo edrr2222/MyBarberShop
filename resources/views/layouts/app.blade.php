@@ -117,6 +117,22 @@
         .badge-inactivo { background: #f4f0ea; color: #8a7c6c; }
         .scissors-divider { display: flex; align-items: center; gap: 10px; color: #c9b79c; margin: 20px 0; }
         .scissors-divider::before, .scissors-divider::after { content: ''; flex: 1; height: 1px; background: #e4d9c8; }
+        footer.marca-footer {
+            padding: 22px 16px 30px;
+            display: flex;
+            justify-content: center;
+        }
+        footer.marca-footer .redes {
+            display: flex;
+            gap: 12px;
+        }
+        footer.marca-footer .redes a {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: var(--color-primario); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none; opacity: .85;
+        }
+        footer.marca-footer .redes a:hover { opacity: 1; }
     </style>
 </head>
 <body>
@@ -139,5 +155,16 @@
     <main>
         @yield('content')
     </main>
+    @if (isset($barberia) && $barberia && $barberia->redesSociales->isNotEmpty())
+        <footer class="marca-footer">
+            <div class="redes">
+                @foreach ($barberia->redesSociales as $red)
+                    <a href="{{ $red->url }}" target="_blank" rel="noopener" title="{{ \App\Models\BarberiaRedSocial::PLATAFORMAS[$red->plataforma] ?? $red->plataforma }}">
+                        @include('partials.red-social-icon', ['plataforma' => $red->plataforma])
+                    </a>
+                @endforeach
+            </div>
+        </footer>
+    @endif
 </body>
 </html>

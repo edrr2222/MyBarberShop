@@ -40,6 +40,10 @@ class ResolveTenant
         session([
             'barberia_id' => $barberia->id,
             'sede_id' => $sede->id,
+            // Guardamos también los slugs para poder reconstruir la URL de
+            // login del cliente si su sesión expira estando ya en /mi-qr o /servicios.
+            'barberia_slug' => $barberia->slug,
+            'sede_slug' => $sede->slug,
         ]);
 
         return $next($request);

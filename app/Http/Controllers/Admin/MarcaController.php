@@ -17,6 +17,7 @@ class MarcaController extends Controller
         abort_unless($this->esAdminDeBarberiaCompleta(), 403, 'Solo el administrador de la barbería puede editar la marca.');
 
         $barberia = Barberia::findOrFail($this->barberiaId());
+        $barberia->load('redesSociales');
 
         return view('admin.marca.edit', compact('barberia'));
     }
