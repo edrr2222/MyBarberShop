@@ -1,0 +1,12 @@
+{
+	frankenphp
+	admin off
+}
+
+:{$PORT} {
+	# root ya queda acotado a public/ — .env, composer.json, database/, etc.
+	# quedan fuera del document root y no son alcanzables por HTTP.
+	root * /app/public
+	encode gzip
+	php_server
+}

@@ -89,7 +89,31 @@ Desde `/admin/login` el administrador puede gestionar:
 - **Servicios**: nombre, precio, duración, si aplica sello de fidelidad, activar/desactivar.
 - **Clientes**: listado con búsqueda por nombre/cédula, sellos actuales, activar/desactivar cuenta.
 
-Los colores configurados en Marca se propagan a todas las pantallas (cliente, empleado, admin) vía variables CSS.
+Los colores configurados en Marca se propagan a todas las pantallas (cliente, empleado, admin) vía variables CSS. Las redes sociales configuradas ahí (Instagram, WhatsApp, etc.) se muestran como íconos en el pie de las páginas de cliente y empleado.
+
+## Deploy en Render
+
+El proyecto incluye `Dockerfile` + `render.yaml` para desplegar como Web Service (Docker) con una base de datos Postgres administrada. La imagen usa [FrankenPHP](https://frankenphp.dev/) (PHP + Caddy en un solo binario) — más liviano que montar Nginx + PHP-FPM por separado, y suficiente para el tráfico de un MVP.
+
+### Opción 1: Blueprint (recomendado, un clic)
+
+1. En Render: **New → Blueprint**, conecta este repositorio. Render detecta `render.yaml` y crea el Web Service + la base de datos Postgres juntos.
+2. Antes de confirmar (o justo después, en el dashboard del servicio), define las dos variables marcadas `sync: false`:
+   - `APP_KEY`: genera un valor localmente con `php artisan key:generate --show` y pégalo tal cual (incluye el prefijo `base64:`).
+   - `APP_URL`: déjala vacía en el primer deploy; una vez Render asigne la URL (ej. `https://mybarbershop.onrender.com`), actualízala con esa URL y vuelve a desplegar (afecta las URLs de los assets y del logo).
+3. Render construye la imagen, corre el contenedor, y el propio `docker/entrypoint.sh` ejecuta `php artisan migrate --force` (crea los 3 schemas y carga los stored procedures) antes de levantar el servidor.
+
+### Opción 2: manual
+
+1. Crea una base de datos Postgres en Render (free tier).
+2. Crea un Web Service apuntando a este repo, entorno **Docker** (usa el `Dockerfile` de la raíz).
+3. Configura las variables de entorno (ver `render.yaml` para la lista completa): `APP_KEY`, `APP_URL`, `APP_ENV=production`, `APP_DEBUG=false`, `APP_LOCALE=es`, y las `DB_*` apuntando a la base de datos creada en el paso 1.
+4. Deploy. El healthcheck usa `/up` (ya viene configurado en `bootstrap/app.php`).
+
+### Limitaciones a tener en cuenta en free tier
+
+- **Los logos subidos desde Marca no persisten**: el filesystem del contenedor es efímero — cualquier redeploy o reinicio por inactividad borra lo subido a `storage/app/public`. Los discos persistentes son una función paga de Render. Para producción real, mover el disco `public` a un servicio externo (S3, Cloudinary, etc.).
+- Ver también la sección siguiente sobre las demás limitaciones del free tier (sleep, expiración de Postgres, cron).
 
 ## Flujo de sellado (resumen)
 
@@ -108,4 +132,4 @@ Los colores configurados en Marca se propagan a todas las pantallas (cliente, em
 
 - Generación descargable del QR fijo de sede desde el panel admin.
 - Corrección/anulación de un sello aplicado por error (fuera de alcance del MVP).
-- Deploy en Render (Web Service + Postgres free tier).
+- Almacenamiento persistente para el logo (ver limitación de Render arriba).

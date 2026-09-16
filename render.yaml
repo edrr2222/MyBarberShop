@@ -1,0 +1,63 @@
+databases:
+  - name: mybarbershop-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: mybarbershop
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: MyBarberShop
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_LOCALE
+        value: es
+      - key: APP_FALLBACK_LOCALE
+        value: es
+      # Generar localmente con: php artisan key:generate --show
+      # y pegar el valor aquí manualmente en el dashboard de Render.
+      - key: APP_KEY
+        sync: false
+      # Actualizar con la URL real que asigna Render después del primer deploy
+      # (aparece en el dashboard, ej. https://mybarbershop.onrender.com).
+      - key: APP_URL
+        sync: false
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+          name: mybarbershop-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: mybarbershop-db
+          property: port
+      - key: DB_DATABASE
+        fromDatabase:
+          name: mybarbershop-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: mybarbershop-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: mybarbershop-db
+          property: password
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: warning
