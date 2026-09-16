@@ -24,22 +24,21 @@ export default {
     return {
       token: null,
       expiresAt: null,
+      duracionTotalMs: 60000, // se recalcula con el valor real que devuelva el backend
       segundosRestantes: 100,
       sellosActuales: 0,
       sellosRequeridos: 7,
       corteGratis: false,
-      pollTimer: null,
+      refreshTimer: null,
       tickTimer: null,
     }
   },
   mounted() {
     this.refrescarToken()
-    // Regenera el QR periódicamente antes de que expire (ver loyalty.config.qr_token_segundos)
-    this.pollTimer = setInterval(this.refrescarToken, 30000)
     this.tickTimer = setInterval(this.actualizarBarra, 1000)
   },
   beforeUnmount() {
-    clearInterval(this.pollTimer)
+    clearTimeout(this.refreshTimer)
     clearInterval(this.tickTimer)
   },
   methods: {
@@ -49,9 +48,19 @@ export default {
         const data = await res.json()
         if (!data.ok) return
 
+        const ahora = Date.now()
         this.token = data.token
         this.expiresAt = new Date(data.expires_at)
+        // Duración real configurada por la barbería (loyalty.config.qr_token_segundos),
+        // no un valor fijo — así la barra y el refresco calzan sin importar el valor.
+        this.duracionTotalMs = Math.max(1000, this.expiresAt.getTime() - ahora)
         this.$nextTick(() => this.pintarQr())
+
+        // Se programa el siguiente refresco un poco antes de que expire (80% del
+        // tiempo total), en vez de un intervalo fijo que podía desincronizarse
+        // de la duración real y dejar la barra "pegada" sin bajar de la mitad.
+        clearTimeout(this.refreshTimer)
+        this.refreshTimer = setTimeout(this.refrescarToken, this.duracionTotalMs * 0.8)
       } catch (e) {
         console.error('No se pudo generar el QR', e)
       }
@@ -64,8 +73,7 @@ export default {
     actualizarBarra() {
       if (!this.expiresAt) return
       const totalMs = this.expiresAt - Date.now()
-      const totalDuracion = 60000 // ajustar si loyalty.config cambia el default
-      this.segundosRestantes = Math.max(0, Math.round((totalMs / totalDuracion) * 100))
+      this.segundosRestantes = Math.max(0, Math.round((totalMs / this.duracionTotalMs) * 100))
     },
     // Llamado externamente (ej. via WebSocket/polling de estado de tarjeta)
     // cuando el backend confirma que se completó la tarjeta.
@@ -73,7 +81,7 @@ export default {
       this.sellosActuales = sellos
       this.sellosRequeridos = requeridos
       this.corteGratis = true
-      clearInterval(this.pollTimer)
+      clearTimeout(this.refreshTimer)
     },
   },
 }
