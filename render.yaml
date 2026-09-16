@@ -31,12 +31,13 @@ services:
         sync: false
       - key: DB_CONNECTION
         value: pgsql
-      # Las 5 siguientes se llenan a mano en el dashboard de Render con los
-      # datos de tu base de datos Postgres YA EXISTENTE (pestaña "Connect" de
-      # ese servicio) — mismo host/puerto/usuario/contraseña/nombre de base
-      # que usa el otro proyecto. No hace falta crear una base nueva: gracias
-      # a DB_SCHEMA de abajo, todas las tablas de esta app quedan aisladas en
-      # su propio schema de Postgres, sin tocar las tablas del otro proyecto.
+      # Las 5 siguientes se llenan a mano en el dashboard de Render. USA UN
+      # ROL DE POSTGRES DEDICADO para esta app (nunca el usuario/contraseña
+      # del otro proyecto, que tiene acceso total incluido su schema public)
+      # — ver README, sección "Deploy en Render", para el script SQL que
+      # crea ese rol con permisos acotados solo a DB_SCHEMA. DB_DATABASE sí
+      # es el mismo nombre de base que usa el otro proyecto (se comparte la
+      # instancia, no la base — no hace falta crear una base nueva).
       - key: DB_HOST
         sync: false
       - key: DB_PORT
@@ -47,6 +48,11 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      # Fuerza SSL — necesario si te conectas por la External Database URL
+      # (la app y la base de datos no están en la misma red privada de
+      # Render); inofensivo si terminan quedando en la misma región/red.
+      - key: DB_SSLMODE
+        value: require
       # Schema dedicado para las tablas propias de Laravel (users, sessions,
       # cache, jobs, migrations...). tenant.*/barberia.*/loyalty.* no lo
       # necesitan porque ya especifican su schema en cada modelo.

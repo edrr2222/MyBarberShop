@@ -99,27 +99,58 @@ El proyecto incluye `Dockerfile` + `render.yaml` para desplegar como Web Service
 >
 > **No hace falta crear una base de datos nueva dentro de esa instancia.** Todas las tablas de MyBarberShop —incluidas las propias de Laravel (`users`, `sessions`, `cache`, `jobs`, `migrations`...)— quedan aisladas en su propio schema de Postgres (`mybarbershop`, vía `DB_SCHEMA`) dentro de la misma base de datos que ya usa tu otro proyecto. `tenant.*`, `barberia.*` y `loyalty.*` (las tablas del dominio) ya viven en sus propios schemas de siempre. Nada de esto toca el schema `public` donde probablemente vive el otro proyecto.
 
-### 1. Blueprint
+### 1. Crear un rol de Postgres dedicado (no reutilizar el del otro proyecto)
+
+El usuario/contraseña del otro proyecto tiene acceso total a esa base de datos, incluido su schema `public` — no lo uses aquí. En vez de eso, creas un rol nuevo con permisos acotados solo al schema de MyBarberShop.
+
+Conéctate a la base de datos con la **External Connection String** (pestaña **Connect** del servicio Postgres en Render — si tu otro proyecto ya te compartió esos datos, pídeselos) y corre, reemplazando la contraseña:
+
+```sql
+CREATE ROLE mybarbershop_user WITH LOGIN PASSWORD 'una-password-fuerte-aqui';
+GRANT CONNECT ON DATABASE door_to_door TO mybarbershop_user;
+-- Necesario para que la app pueda crear SUS PROPIOS schemas nuevos
+-- (tenant, barberia, loyalty, mybarbershop) — no da acceso a schemas
+-- ya existentes de otros dueños, como el "public" del otro proyecto.
+GRANT CREATE ON DATABASE door_to_door TO mybarbershop_user;
+CREATE SCHEMA mybarbershop AUTHORIZATION mybarbershop_user;
+ALTER ROLE mybarbershop_user IN DATABASE door_to_door SET search_path TO mybarbershop, public;
+```
+
+Los otros 3 schemas del dominio (`tenant`, `barberia`, `loyalty`) los crea la propia app en el primer deploy (migración `2026_09_16_000000_create_schemas.php`) — no hace falta crearlos a mano, solo `mybarbershop` (por la razón técnica explicada más abajo) y los permisos de arriba.
+
+Verificado (probado con Docker + un rol con exactamente estos permisos, no solo en teoría): con este rol, la app migra y funciona completo — incluida la extensión `pgcrypto` que usan los stored procedures, que se resuelve igual aunque ya esté instalada en `public` por el otro proyecto — y al mismo tiempo el rol recibe `permission denied` si intenta leer cualquier tabla de `public`.
+
+Esto crea un rol que solo puede conectarse y trabajar dentro del schema `mybarbershop` — no puede leer ni escribir nada en `public`, donde vive la otra app.
+
+### 2. Blueprint
 
 En Render: **New → Blueprint**, conecta este repositorio. Render detecta `render.yaml` y crea el Web Service (no crea base de datos, según lo de arriba).
 
-### 2. Completar las variables marcadas `sync: false`
+### 3. Completar las variables marcadas `sync: false`
 
 En el dashboard del servicio recién creado, pestaña **Environment**:
 
 - `APP_KEY`: genera un valor localmente con `php artisan key:generate --show` y pégalo tal cual (incluye el prefijo `base64:`).
 - `APP_URL`: déjala vacía en el primer deploy; una vez Render asigne la URL (ej. `https://mybarbershop.onrender.com`), actualízala con esa URL y vuelve a desplegar (afecta las URLs de los assets y del logo).
-- `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`: los mismos datos de tu Postgres existente — todos ellos, tal cual, desde la pestaña **Connect** de ese servicio (el mismo nombre de base de datos que usa el otro proyecto; no hay que crear uno nuevo).
+- `DB_HOST`, `DB_PORT`: los de la base de datos (pestaña **Connect**) — usa el host **externo** si MyBarberShop no queda en la misma red privada/región de Render que esa base de datos; el interno si sí.
+- `DB_DATABASE`: el mismo nombre de base que usa el otro proyecto (ej. `door_to_door`) — se comparte la instancia, no hace falta crear una base nueva.
+- `DB_USERNAME` / `DB_PASSWORD`: `mybarbershop_user` y la contraseña que elegiste en el paso 1 — **no** las credenciales del otro proyecto.
 
-`DB_SCHEMA=mybarbershop` ya viene fijo en `render.yaml` — no hace falta tocarlo.
+`DB_SCHEMA=mybarbershop` y `DB_SSLMODE=require` ya vienen fijos en `render.yaml` — no hace falta tocarlos.
 
 Render redepliega automáticamente al guardar variables de entorno. El propio `docker/entrypoint.sh` corre `php artisan db:prepare-schema` (crea el schema `mybarbershop` si no existe — necesario antes de migrar, ver más abajo) y luego `php artisan migrate --force` (crea los schemas `tenant`/`barberia`/`loyalty` y carga los stored procedures) antes de levantar el servidor — no hace falta correr nada a mano.
 
 <details>
 <summary>¿Por qué un comando aparte para crear el schema, y no una migración?</summary>
 
-`php artisan migrate` crea su propia tabla de control `migrations` (usando el schema configurado en `DB_SCHEMA`) *antes* de leer ningún archivo de migración. Si ese schema todavía no existe, esa creación falla. Por eso `db:prepare-schema` (`app/Console/Commands/PrepareDatabaseSchema.php`) se corre primero.
+`php artisan migrate` crea su propia tabla de control `migrations` (usando el schema configurado en `DB_SCHEMA`) *antes* de leer ningún archivo de migración. Si ese schema todavía no existe, esa creación falla. Por eso `db:prepare-schema` (`app/Console/Commands/PrepareDatabaseSchema.php`) se corre primero. Como ya creaste el schema a mano en el paso 1, este comando en realidad no tiene nada que hacer en el primer deploy — queda ahí como respaldo para el día que reconstruyas la base desde cero.
 </details>
+
+### Riesgos de compartir la instancia (aplican independientemente de MyBarberShop)
+
+- **Límite de conexiones y almacenamiento compartidos**: el free tier de Postgres en Render tiene un límite bajo de conexiones concurrentes (unas pocas decenas) y 1 GB de almacenamiento, compartido entre ambos proyectos. Si alguno de los dos tiene tráfico alto, puede afectar al otro.
+- **Sin backups automáticos** en el plan free — si algo sale mal, no hay rollback fácil.
+- **Expiración del plan free**: los Postgres free de Render caducan a los 90 días. Antes de depender de esta base para MyBarberShop, revisa en el dashboard cuánto le queda a la instancia.
 
 ### Limitaciones a tener en cuenta en free tier
 

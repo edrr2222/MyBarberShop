@@ -20,7 +20,7 @@ class PrepareDatabaseSchema extends Command
 
     public function handle(): int
     {
-        $schema = config('database.connections.pgsql.search_path');
+        $schema = config('database.connections.pgsql.schema');
 
         if (! $schema || $schema === 'public') {
             $this->info('DB_SCHEMA no configurado (o es "public"), nada que preparar.');

@@ -95,13 +95,26 @@ return [
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-            // Esquema donde viven las tablas propias de Laravel (users, sessions,
-            // cache, jobs, migrations...) — NO afecta a tenant.*/barberia.*/loyalty.*,
-            // que ya especifican su schema explícito en cada modelo. Se puede
-            // apuntar a un schema dedicado (DB_SCHEMA) cuando esta app comparte
-            // una base de datos Postgres con otro proyecto, para no chocar con
-            // sus tablas si también usa nombres como "users" o "sessions".
-            'search_path' => env('DB_SCHEMA', 'public'),
+            // Nombre "limpio" del schema propio de la app (un solo valor, sin
+            // comas) — lo usan db:prepare-schema y la migración de schemas
+            // para saber exactamente qué crear. NO usar 'search_path' de abajo
+            // para esto: ese incluye ", public" como respaldo de búsqueda.
+            'schema' => env('DB_SCHEMA', 'public'),
+            // Esquema(s) de conexión reales. Donde viven las tablas propias de
+            // Laravel (users, sessions, cache, jobs, migrations...) — NO afecta
+            // a tenant.*/barberia.*/loyalty.*, que ya especifican su schema
+            // explícito en cada modelo. Se puede apuntar a un schema dedicado
+            // (DB_SCHEMA) cuando esta app comparte una base de datos Postgres
+            // con otro proyecto, para no chocar con sus tablas si también usa
+            // nombres como "users" o "sessions". Se agrega "public" como
+            // respaldo en la búsqueda (no para crear tablas ahí — las tablas
+            // nuevas siempre van al primer schema de la lista) por si la
+            // extensión pgcrypto (gen_random_uuid, usada en los stored
+            // procedures) ya está instalada en "public" por el otro proyecto:
+            // sin este respaldo, nuestras funciones no la encontrarían.
+            'search_path' => env('DB_SCHEMA', 'public') === 'public'
+                ? 'public'
+                : env('DB_SCHEMA').',public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
         ],
 
