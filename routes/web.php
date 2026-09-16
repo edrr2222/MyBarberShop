@@ -1,7 +1,4 @@
 <?php
-/**
- * Snippet para copiar/fusionar dentro de tu routes/web.php real.
- */
 
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\ClientAuthController;
@@ -9,6 +6,10 @@ use App\Http\Controllers\EmpleadoAuthController;
 use App\Http\Controllers\QrController;
 use App\Http\Controllers\TenantController;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/', function () {
+    return view('welcome');
+});
 
 // ---- Entrada del cliente vía QR fijo de sede ----
 Route::middleware('tenant')->prefix('b/{barberiaSlug}/{sedeSlug}')->group(function () {
