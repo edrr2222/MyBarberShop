@@ -38,9 +38,10 @@ database/procedures/      -> loyalty_procedures.sql (fuente de los SPs)
 app/Models/                -> Eloquent models, uno por tabla
 app/Http/Middleware/       -> ResolveTenant.php (resuelve barbería+sede por slug)
 app/Http/Controllers/      -> TenantController, *AuthController (x3 guards), QrController
+app/Http/Controllers/Admin/ -> CRUD de marca, sedes, empleados, servicios, clientes
 routes/web.php             -> rutas de la app (tenant, client, staff, admin, api/loyalty)
-resources/js/components/   -> ClientQr.vue, EmpleadoScanner.vue
-resources/views/           -> vistas Blade (client, empleado, admin — placeholders, ver Pendiente)
+resources/js/components/   -> ClientQr.vue, EmpleadoScanner.vue (montados con Vite)
+resources/views/           -> vistas Blade (client, empleado, admin) con identidad de peluquería
 config/auth.php            -> guards client/empleado/admin ya configurados
 ```
 
@@ -76,11 +77,19 @@ config/auth.php            -> guards client/empleado/admin ya configurados
    ```
    La app queda en `http://127.0.0.1:8000`. Rutas para probar: `/`, `/staff/login`, `/admin/login`, y `/b/{barberiaSlug}/{sedeSlug}` (requiere una fila en `tenant.barberia`/`tenant.sede` con `estado = true`).
 
-5. (Opcional) Instala las dependencias JS de los componentes Vue de QR:
-   ```bash
-   npm install qrcode html5-qrcode
-   ```
-   `ClientQr.vue` pinta el QR dinámico (se regenera antes de expirar). `EmpleadoScanner.vue` abre la cámara, escanea, llama a `/api/loyalty/escanear` y muestra el mensaje de "¡CORTE GRATIS!" cuando corresponde. Aún no están montados en ninguna vista (ver Pendiente).
+Los componentes Vue del QR y el scanner (`ClientQr.vue`, `EmpleadoScanner.vue`) ya están montados vía Vite en `client/qr` y `empleado/scanner` — no requieren pasos extra.
+
+## Panel admin
+
+Desde `/admin/login` el administrador puede gestionar:
+
+- **Marca** (`/admin/marca`): nombre, colores (primario/secundario/terciario) y logo — solo visible para el admin de barbería completa (`sede_id` null).
+- **Sedes**: crear/editar sedes, activar/desactivar. Un admin de sede específica solo ve y edita su propia sede.
+- **Empleados**: crear/editar (incluye reseteo de contraseña), asignar a sede, activar/desactivar.
+- **Servicios**: nombre, precio, duración, si aplica sello de fidelidad, activar/desactivar.
+- **Clientes**: listado con búsqueda por nombre/cédula, sellos actuales, activar/desactivar cuenta.
+
+Los colores configurados en Marca se propagan a todas las pantallas (cliente, empleado, admin) vía variables CSS.
 
 ## Flujo de sellado (resumen)
 
@@ -97,8 +106,6 @@ config/auth.php            -> guards client/empleado/admin ya configurados
 
 ## Pendiente
 
-- Las vistas Blade (landing, logins, scanner, dashboards) son placeholders mínimos — falta el diseño real y montar los componentes Vue (`ClientQr.vue`, `EmpleadoScanner.vue`).
-- Panel admin: CRUD de sede, empleados, servicios; configuración de logo/colores; generación descargable del QR fijo de sede.
-- Theming dinámico (variables CSS `--color-primario`/`--color-secundario` desde los datos de la barbería).
+- Generación descargable del QR fijo de sede desde el panel admin.
 - Corrección/anulación de un sello aplicado por error (fuera de alcance del MVP).
 - Deploy en Render (Web Service + Postgres free tier).
