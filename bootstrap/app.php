@@ -16,6 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => \App\Http\Middleware\ResolveTenant::class,
         ]);
 
+        // Render (y la mayoría de plataformas cloud) terminan el HTTPS en su
+        // proxy y reenvían el tráfico en plano al contenedor — sin esto,
+        // Laravel genera URLs de assets/redirects en http:// aunque el
+        // visitante esté en https://. La IP del proxy no es fija/conocida,
+        // así que se confía en cualquier origen (estándar en este tipo de
+        // entornos, ya que el propio Render es el único que puede llegar
+        // al contenedor).
+        $middleware->trustProxies(at: '*');
+
         // Con 3 guards independientes (client/empleado/admin), el redirect
         // por defecto a la ruta "login" (que no existe) daba 500 en vez de
         // mandar al login correcto cuando la sesión expira.
