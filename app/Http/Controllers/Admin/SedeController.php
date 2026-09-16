@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\Concerns\ScopedAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Sede;
+use App\Support\TenantToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -22,7 +23,15 @@ class SedeController extends Controller
 
         $sedes = $query->orderBy('nombre')->get();
 
-        return view('admin.sedes.index', compact('sedes'));
+        $barberiaToken = TenantToken::barberia($this->barberiaId());
+        $links = $sedes->mapWithKeys(fn ($sede) => [
+            $sede->id => route('tenant.landing', [
+                'barberiaToken' => $barberiaToken,
+                'sedeToken' => TenantToken::sede($sede->id),
+            ]),
+        ]);
+
+        return view('admin.sedes.index', compact('sedes', 'links'));
     }
 
     public function create()

@@ -13,7 +13,7 @@
     @else
         <table>
             <thead>
-                <tr><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Estado</th><th></th></tr>
+                <tr><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Link del cliente</th><th>Estado</th><th></th></tr>
             </thead>
             <tbody>
                 @foreach ($sedes as $sede)
@@ -21,6 +21,9 @@
                         <td>{{ $sede->nombre }}</td>
                         <td>{{ $sede->direccion ?? '—' }}</td>
                         <td>{{ $sede->telefono ?? '—' }}</td>
+                        <td>
+                            <input type="text" readonly value="{{ $links[$sede->id] }}" onclick="this.select()" style="width:220px;font-size:.78rem;padding:6px 8px">
+                        </td>
                         <td><span class="badge {{ $sede->estado ? 'badge-activo' : 'badge-inactivo' }}">{{ $sede->estado ? 'Activa' : 'Inactiva' }}</span></td>
                         <td style="text-align:right;white-space:nowrap">
                             <a href="{{ route('admin.sedes.edit', $sede) }}" class="btn btn-secundario btn-chico">Editar</a>
