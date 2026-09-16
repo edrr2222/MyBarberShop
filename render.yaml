@@ -1,7 +1,7 @@
-databases:
-  - name: mybarbershop-db
-    plan: free
-    postgresMajorVersion: "16"
+# No se declara un bloque `databases:` a propósito: el free tier de Render
+# solo permite una base de datos Postgres activa por cuenta. Este servicio
+# reutiliza una base de datos Postgres que ya existe en tu cuenta — ver
+# instrucciones en el README, sección "Deploy en Render".
 
 services:
   - type: web
@@ -31,26 +31,23 @@ services:
         sync: false
       - key: DB_CONNECTION
         value: pgsql
+      # Las 5 siguientes se llenan a mano en el dashboard de Render con los
+      # datos de tu base de datos Postgres YA EXISTENTE (pestaña "Connect" de
+      # ese servicio). Antes de llenarlas, crea ahí una base lógica dedicada
+      # para este proyecto (no reuses la de otra app): conéctate con el
+      # comando psql que te da Render y corre `CREATE DATABASE mybarbershop;`
+      # — luego usa "mybarbershop" como DB_DATABASE, y el mismo host/usuario/
+      # contraseña/puerto que el resto de esa base de datos.
       - key: DB_HOST
-        fromDatabase:
-          name: mybarbershop-db
-          property: host
+        sync: false
       - key: DB_PORT
-        fromDatabase:
-          name: mybarbershop-db
-          property: port
+        sync: false
       - key: DB_DATABASE
-        fromDatabase:
-          name: mybarbershop-db
-          property: database
+        sync: false
       - key: DB_USERNAME
-        fromDatabase:
-          name: mybarbershop-db
-          property: user
+        sync: false
       - key: DB_PASSWORD
-        fromDatabase:
-          name: mybarbershop-db
-          property: password
+        sync: false
       - key: SESSION_DRIVER
         value: database
       - key: CACHE_STORE

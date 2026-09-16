@@ -93,22 +93,34 @@ Los colores configurados en Marca se propagan a todas las pantallas (cliente, em
 
 ## Deploy en Render
 
-El proyecto incluye `Dockerfile` + `render.yaml` para desplegar como Web Service (Docker) con una base de datos Postgres administrada. La imagen usa [FrankenPHP](https://frankenphp.dev/) (PHP + Caddy en un solo binario) — más liviano que montar Nginx + PHP-FPM por separado, y suficiente para el tráfico de un MVP.
+El proyecto incluye `Dockerfile` + `render.yaml` para desplegar como Web Service (Docker). La imagen usa [FrankenPHP](https://frankenphp.dev/) (PHP + Caddy en un solo binario) — más liviano que montar Nginx + PHP-FPM por separado, y suficiente para el tráfico de un MVP.
 
-### Opción 1: Blueprint (recomendado, un clic)
+> **Importante**: el free tier de Render solo permite **una base de datos Postgres activa por cuenta**. Por eso `render.yaml` NO declara una base de datos nueva — asume que vas a reutilizar una que ya existe en tu cuenta (de otro proyecto). Si no tienes ninguna todavía, créala primero desde el dashboard (**New → PostgreSQL**, plan free) y luego sigue los pasos de abajo.
 
-1. En Render: **New → Blueprint**, conecta este repositorio. Render detecta `render.yaml` y crea el Web Service + la base de datos Postgres juntos.
-2. Antes de confirmar (o justo después, en el dashboard del servicio), define las dos variables marcadas `sync: false`:
-   - `APP_KEY`: genera un valor localmente con `php artisan key:generate --show` y pégalo tal cual (incluye el prefijo `base64:`).
-   - `APP_URL`: déjala vacía en el primer deploy; una vez Render asigne la URL (ej. `https://mybarbershop.onrender.com`), actualízala con esa URL y vuelve a desplegar (afecta las URLs de los assets y del logo).
-3. Render construye la imagen, corre el contenedor, y el propio `docker/entrypoint.sh` ejecuta `php artisan migrate --force` (crea los 3 schemas y carga los stored procedures) antes de levantar el servidor.
+### 1. Crear una base lógica dedicada dentro de tu Postgres existente
 
-### Opción 2: manual
+No reutilices directamente la base de datos de otro proyecto (mezclaría tablas de dos apps distintas). En el dashboard de Render, entra a tu servicio Postgres existente → pestaña **Connect** → copia el comando `psql` que te da (o la "External Database URL") y corre:
 
-1. Crea una base de datos Postgres en Render (free tier).
-2. Crea un Web Service apuntando a este repo, entorno **Docker** (usa el `Dockerfile` de la raíz).
-3. Configura las variables de entorno (ver `render.yaml` para la lista completa): `APP_KEY`, `APP_URL`, `APP_ENV=production`, `APP_DEBUG=false`, `APP_LOCALE=es`, y las `DB_*` apuntando a la base de datos creada en el paso 1.
-4. Deploy. El healthcheck usa `/up` (ya viene configurado en `bootstrap/app.php`).
+```sql
+CREATE DATABASE mybarbershop;
+```
+
+Esto crea una base nueva dentro de la misma instancia, sin tocar la del otro proyecto. Anota host, puerto, usuario y contraseña que te muestra esa misma pestaña "Connect" — los vas a necesitar en el paso 3.
+
+### 2. Blueprint
+
+En Render: **New → Blueprint**, conecta este repositorio. Render detecta `render.yaml` y crea el Web Service (no crea base de datos, según lo de arriba).
+
+### 3. Completar las variables marcadas `sync: false`
+
+En el dashboard del servicio recién creado, pestaña **Environment**:
+
+- `APP_KEY`: genera un valor localmente con `php artisan key:generate --show` y pégalo tal cual (incluye el prefijo `base64:`).
+- `APP_URL`: déjala vacía en el primer deploy; una vez Render asigne la URL (ej. `https://mybarbershop.onrender.com`), actualízala con esa URL y vuelve a desplegar (afecta las URLs de los assets y del logo).
+- `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`: los mismos datos de tu Postgres existente (pestaña "Connect" de ese servicio).
+- `DB_DATABASE`: `mybarbershop` (la base que creaste en el paso 1, **no** la del otro proyecto).
+
+Render redepliega automáticamente al guardar variables de entorno. El propio `docker/entrypoint.sh` ejecuta `php artisan migrate --force` (crea los 3 schemas y carga los stored procedures dentro de la base `mybarbershop`) antes de levantar el servidor — no hace falta correr nada a mano.
 
 ### Limitaciones a tener en cuenta en free tier
 
