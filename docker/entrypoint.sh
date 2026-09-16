@@ -2,6 +2,7 @@
 set -e
 
 php artisan config:clear
+php artisan db:prepare-schema
 php artisan migrate --force
 php artisan storage:link || true
 

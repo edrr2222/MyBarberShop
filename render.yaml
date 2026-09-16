@@ -33,11 +33,10 @@ services:
         value: pgsql
       # Las 5 siguientes se llenan a mano en el dashboard de Render con los
       # datos de tu base de datos Postgres YA EXISTENTE (pestaña "Connect" de
-      # ese servicio). Antes de llenarlas, crea ahí una base lógica dedicada
-      # para este proyecto (no reuses la de otra app): conéctate con el
-      # comando psql que te da Render y corre `CREATE DATABASE mybarbershop;`
-      # — luego usa "mybarbershop" como DB_DATABASE, y el mismo host/usuario/
-      # contraseña/puerto que el resto de esa base de datos.
+      # ese servicio) — mismo host/puerto/usuario/contraseña/nombre de base
+      # que usa el otro proyecto. No hace falta crear una base nueva: gracias
+      # a DB_SCHEMA de abajo, todas las tablas de esta app quedan aisladas en
+      # su propio schema de Postgres, sin tocar las tablas del otro proyecto.
       - key: DB_HOST
         sync: false
       - key: DB_PORT
@@ -48,6 +47,11 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
+      # Schema dedicado para las tablas propias de Laravel (users, sessions,
+      # cache, jobs, migrations...). tenant.*/barberia.*/loyalty.* no lo
+      # necesitan porque ya especifican su schema en cada modelo.
+      - key: DB_SCHEMA
+        value: mybarbershop
       - key: SESSION_DRIVER
         value: database
       - key: CACHE_STORE

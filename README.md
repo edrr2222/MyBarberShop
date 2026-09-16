@@ -96,31 +96,30 @@ Los colores configurados en Marca se propagan a todas las pantallas (cliente, em
 El proyecto incluye `Dockerfile` + `render.yaml` para desplegar como Web Service (Docker). La imagen usa [FrankenPHP](https://frankenphp.dev/) (PHP + Caddy en un solo binario) — más liviano que montar Nginx + PHP-FPM por separado, y suficiente para el tráfico de un MVP.
 
 > **Importante**: el free tier de Render solo permite **una base de datos Postgres activa por cuenta**. Por eso `render.yaml` NO declara una base de datos nueva — asume que vas a reutilizar una que ya existe en tu cuenta (de otro proyecto). Si no tienes ninguna todavía, créala primero desde el dashboard (**New → PostgreSQL**, plan free) y luego sigue los pasos de abajo.
+>
+> **No hace falta crear una base de datos nueva dentro de esa instancia.** Todas las tablas de MyBarberShop —incluidas las propias de Laravel (`users`, `sessions`, `cache`, `jobs`, `migrations`...)— quedan aisladas en su propio schema de Postgres (`mybarbershop`, vía `DB_SCHEMA`) dentro de la misma base de datos que ya usa tu otro proyecto. `tenant.*`, `barberia.*` y `loyalty.*` (las tablas del dominio) ya viven en sus propios schemas de siempre. Nada de esto toca el schema `public` donde probablemente vive el otro proyecto.
 
-### 1. Crear una base lógica dedicada dentro de tu Postgres existente
-
-No reutilices directamente la base de datos de otro proyecto (mezclaría tablas de dos apps distintas). En el dashboard de Render, entra a tu servicio Postgres existente → pestaña **Connect** → copia el comando `psql` que te da (o la "External Database URL") y corre:
-
-```sql
-CREATE DATABASE mybarbershop;
-```
-
-Esto crea una base nueva dentro de la misma instancia, sin tocar la del otro proyecto. Anota host, puerto, usuario y contraseña que te muestra esa misma pestaña "Connect" — los vas a necesitar en el paso 3.
-
-### 2. Blueprint
+### 1. Blueprint
 
 En Render: **New → Blueprint**, conecta este repositorio. Render detecta `render.yaml` y crea el Web Service (no crea base de datos, según lo de arriba).
 
-### 3. Completar las variables marcadas `sync: false`
+### 2. Completar las variables marcadas `sync: false`
 
 En el dashboard del servicio recién creado, pestaña **Environment**:
 
 - `APP_KEY`: genera un valor localmente con `php artisan key:generate --show` y pégalo tal cual (incluye el prefijo `base64:`).
 - `APP_URL`: déjala vacía en el primer deploy; una vez Render asigne la URL (ej. `https://mybarbershop.onrender.com`), actualízala con esa URL y vuelve a desplegar (afecta las URLs de los assets y del logo).
-- `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`: los mismos datos de tu Postgres existente (pestaña "Connect" de ese servicio).
-- `DB_DATABASE`: `mybarbershop` (la base que creaste en el paso 1, **no** la del otro proyecto).
+- `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`: los mismos datos de tu Postgres existente — todos ellos, tal cual, desde la pestaña **Connect** de ese servicio (el mismo nombre de base de datos que usa el otro proyecto; no hay que crear uno nuevo).
 
-Render redepliega automáticamente al guardar variables de entorno. El propio `docker/entrypoint.sh` ejecuta `php artisan migrate --force` (crea los 3 schemas y carga los stored procedures dentro de la base `mybarbershop`) antes de levantar el servidor — no hace falta correr nada a mano.
+`DB_SCHEMA=mybarbershop` ya viene fijo en `render.yaml` — no hace falta tocarlo.
+
+Render redepliega automáticamente al guardar variables de entorno. El propio `docker/entrypoint.sh` corre `php artisan db:prepare-schema` (crea el schema `mybarbershop` si no existe — necesario antes de migrar, ver más abajo) y luego `php artisan migrate --force` (crea los schemas `tenant`/`barberia`/`loyalty` y carga los stored procedures) antes de levantar el servidor — no hace falta correr nada a mano.
+
+<details>
+<summary>¿Por qué un comando aparte para crear el schema, y no una migración?</summary>
+
+`php artisan migrate` crea su propia tabla de control `migrations` (usando el schema configurado en `DB_SCHEMA`) *antes* de leer ningún archivo de migración. Si ese schema todavía no existe, esa creación falla. Por eso `db:prepare-schema` (`app/Console/Commands/PrepareDatabaseSchema.php`) se corre primero.
+</details>
 
 ### Limitaciones a tener en cuenta en free tier
 

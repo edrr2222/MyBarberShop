@@ -16,6 +16,14 @@ return new class extends Migration
         DB::statement('CREATE SCHEMA IF NOT EXISTS tenant');
         DB::statement('CREATE SCHEMA IF NOT EXISTS barberia');
         DB::statement('CREATE SCHEMA IF NOT EXISTS loyalty');
+
+        // Respaldo por si se corre `migrate` sin pasar por el entrypoint del
+        // deploy (que ya llama a `db:prepare-schema` antes que esto). Ver
+        // config/database.php y app/Console/Commands/PrepareDatabaseSchema.php.
+        $appSchema = config('database.connections.pgsql.search_path');
+        if ($appSchema && $appSchema !== 'public') {
+            DB::statement('CREATE SCHEMA IF NOT EXISTS "'.$appSchema.'"');
+        }
     }
 
     public function down(): void
